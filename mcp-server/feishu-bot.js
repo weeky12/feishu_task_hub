@@ -298,10 +298,15 @@ async function handleMessage(data) {
   const messageId = data.message.message_id;
 
   // 提取文本内容
+  const chatType = data.message.chat_type || 'p2p';
   let text = '';
   try {
     const content = JSON.parse(data.message.content);
     text = (content.text || '').trim();
+    // 群聊消息：清理 @机器人 标记
+    if (chatType === 'group') {
+      text = text.replace(/@_user_\d+/g, '').trim();
+    }
   } catch (error) {
     console.error('[飞书机器人] 解析消息内容失败:', error.message);
     await replyText(messageId, '无法解析消息内容，请发送文本消息');
