@@ -1,0 +1,20 @@
+{
+  "name": "claude-task-hub-mcp",
+  "version": "1.0.0",
+  "description": "Claude Task Hub MCP Server - 任务管理核心",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "bot": "node feishu-bot.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "@larksuiteoapi/node-sdk": "^1.59.0",
+    "dotenv": "^16.4.0",
+    "proper-lockfile": "^4.1.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

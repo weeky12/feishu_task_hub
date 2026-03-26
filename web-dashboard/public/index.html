@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Task Hub</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- 顶部：标题 + 统计卡片 -->
+  <div class="header">
+    <div class="header-title">
+      <i data-lucide="layout-dashboard" class="logo-icon"></i>
+      <h1>Claude Task Hub</h1>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon pending">
+          <i data-lucide="clock"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="stat-pending">0</h3>
+          <p>待处理</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon in-progress">
+          <i data-lucide="loader"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="stat-in-progress">0</h3>
+          <p>进行中</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon completed">
+          <i data-lucide="check-circle"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="stat-completed">0</h3>
+          <p>已完成</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon today">
+          <i data-lucide="calendar-plus"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="stat-today">0</h3>
+          <p>今日新增</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主体：左侧筛选 + 右侧任务列表 -->
+  <div class="main-content">
+
+    <!-- 左侧筛选面板 -->
+    <aside class="filter-panel">
+      <!-- 搜索 -->
+      <div class="filter-section">
+        <h3>搜索</h3>
+        <input type="text" class="search-input" id="search-input" placeholder="搜索任务...">
+      </div>
+
+      <!-- 状态筛选 -->
+      <div class="filter-section">
+        <h3>状态</h3>
+        <button class="filter-btn active" data-filter="status" data-value="">
+          <i data-lucide="list" style="width:16px;height:16px"></i>
+          全部
+          <span class="count" id="count-all">0</span>
+        </button>
+        <button class="filter-btn" data-filter="status" data-value="pending">
+          <i data-lucide="clock" style="width:16px;height:16px"></i>
+          待处理
+          <span class="count" id="count-pending">0</span>
+        </button>
+        <button class="filter-btn" data-filter="status" data-value="in_progress">
+          <i data-lucide="loader" style="width:16px;height:16px"></i>
+          进行中
+          <span class="count" id="count-in-progress">0</span>
+        </button>
+        <button class="filter-btn" data-filter="status" data-value="completed">
+          <i data-lucide="check-circle" style="width:16px;height:16px"></i>
+          已完成
+          <span class="count" id="count-completed">0</span>
+        </button>
+        <button class="filter-btn" data-filter="status" data-value="cancelled">
+          <i data-lucide="x-circle" style="width:16px;height:16px"></i>
+          已取消
+          <span class="count" id="count-cancelled">0</span>
+        </button>
+      </div>
+
+      <!-- 优先级筛选 -->
+      <div class="filter-section">
+        <h3>优先级</h3>
+        <button class="filter-btn active" data-filter="priority" data-value="">
+          <i data-lucide="layers" style="width:16px;height:16px"></i>
+          全部
+        </button>
+        <button class="filter-btn" data-filter="priority" data-value="urgent">
+          <i data-lucide="alert-circle" style="width:16px;height:16px;color:#ef4444"></i>
+          紧急
+        </button>
+        <button class="filter-btn" data-filter="priority" data-value="high">
+          <i data-lucide="arrow-up" style="width:16px;height:16px;color:#f59e0b"></i>
+          高
+        </button>
+        <button class="filter-btn" data-filter="priority" data-value="medium">
+          <i data-lucide="minus" style="width:16px;height:16px;color:#3b82f6"></i>
+          中
+        </button>
+        <button class="filter-btn" data-filter="priority" data-value="low">
+          <i data-lucide="arrow-down" style="width:16px;height:16px;color:#6b7280"></i>
+          低
+        </button>
+      </div>
+    </aside>
+
+    <!-- 右侧任务列表 -->
+    <div class="task-list-container">
+      <div class="task-list-header">
+        <h2>任务列表</h2>
+        <span class="task-count-badge" id="task-count-badge">共 0 项</span>
+      </div>
+      <div class="task-list" id="task-list">
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建任务浮动按钮 -->
+  <button class="fab-create" id="fab-create" title="新建任务">
+    <i data-lucide="plus"></i>
+  </button>
+
+  <!-- 新建任务弹窗 -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h2>
+        <i data-lucide="plus-circle" style="width:20px;height:20px;color:#3b82f6"></i>
+        新建任务
+      </h2>
+      <form id="create-task-form">
+        <div class="form-group">
+          <label for="task-title">标题 *</label>
+          <input type="text" id="task-title" placeholder="输入任务标题..." required>
+        </div>
+        <div class="form-group">
+          <label for="task-desc">描述</label>
+          <textarea id="task-desc" placeholder="输入任务描述..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="task-priority">优先级</label>
+          <select id="task-priority">
+            <option value="medium">中</option>
+            <option value="low">低</option>
+            <option value="high">高</option>
+            <option value="urgent">紧急</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="task-tags">标签（逗号分隔）</label>
+          <input type="text" id="task-tags" placeholder="例如: bug, 前端, 紧急">
+        </div>
+        <div class="form-group">
+          <label for="task-due">截止日期</label>
+          <input type="date" id="task-due">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="modal-cancel">取消</button>
+          <button type="submit" class="btn btn-primary">创建</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

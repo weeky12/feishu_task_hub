@@ -1,0 +1,16 @@
+{
+  "name": "claude-task-hub",
+  "version": "1.0.0",
+  "description": "Claude Code 任务管理中心 - MCP Server + 飞书机器人 + Web 仪表板",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "mcp": "node mcp-server/index.js",
+    "bot": "node mcp-server/feishu-bot.js",
+    "codex-bot": "node mcp-server/codex-bot.js",
+    "web": "node web-dashboard/server.js",
+    "start": "npm run bot & npm run codex-bot & npm run web"
+  },
+  "author": "Claude Task Hub",
+  "license": "MIT"
+}

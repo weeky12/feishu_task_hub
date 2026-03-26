@@ -1,0 +1,23 @@
+# 环境变量（含飞书密钥）
+.env
+
+# 依赖
+node_modules/
+
+# 数据文件
+data/tasks.json
+data/feishu-inbox.json
+
+# 锁文件
+*.lock
+
+# 日志
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
