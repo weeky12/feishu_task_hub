@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "claude-task-hub": {
+      "command": "node",
+      "args": ["/你的路径/feishu_task_hub/mcp-server/index.js"],
+      "description": "任务管理中心 - 创建、跟踪、管理任务，支持飞书通知"
+    }
+  }
+}
