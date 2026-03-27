@@ -18,6 +18,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import WebSocket from 'ws';
+import { execFile } from 'child_process';
 import { TaskStore } from './task-store.js';
 import { FeishuNotifier } from './notifier.js';
 
@@ -338,36 +339,41 @@ async function handleMessage(data) {
     const taskId = text.slice(8).trim();
     await handleDetail(messageId, taskId);
   } else {
-    // 非指令文本 → 优先转发给 Claude Code 处理
-    const forwarded = forwardToBridge({
-      feishu_message_id: messageId,
-      sender_open_id: data.message?.chat_id || '',
-      text: text,
-      timestamp: new Date().toISOString()
-    });
+    // 非指令文本 → 调用 claude -p 直接处理
+    await replyText(messageId, '已收到，Claude 正在处理...');
+    console.log(`[飞书机器人] 调用 claude -p: ${text.substring(0, 100)}`);
 
-    if (forwarded) {
-      await replyText(messageId, '已收到，Claude 正在处理...');
-    } else {
-      // WebSocket 未连接，降级为直接创建任务
+    const claudePath = process.platform === 'win32'
+      ? 'C:/Users/Administrator/AppData/Roaming/npm/claude.cmd'
+      : 'claude';
+
+    execFile(claudePath, ['-p', text], {
+      timeout: 120000,
+      maxBuffer: 1024 * 1024,
+      shell: process.platform === 'win32',
+      cwd: path.join(__dirname, '..')
+    }, async (error, stdout, stderr) => {
       try {
-        const task = await store.createTask({
-          title: text,
-          source: 'feishu'
-        });
-        await notifier.sendTaskCard(task, '创建');
-        await replyText(
-          messageId,
-          `任务已创建（离线模式）\n` +
-          `标题: ${task.title}\n` +
-          `ID: ${task.id}\n\n` +
-          `提示: 使用 /list 查看任务列表，/done ${task.id} 完成任务`
-        );
-      } catch (error) {
-        console.error('[飞书机器人] 创建任务失败:', error.message);
-        await replyText(messageId, `创建任务失败: ${error.message}`);
+        let reply;
+        if (error) {
+          if (error.killed) {
+            reply = '[Claude] 处理超时（2分钟限制）';
+          } else {
+            reply = `[Claude] 处理失败: ${error.message.substring(0, 200)}`;
+          }
+        } else {
+          reply = (stdout || '').trim();
+          if (!reply) reply = '(Claude 无输出)';
+        }
+        // 截断过长回复
+        if (reply.length > 3000) {
+          reply = reply.substring(0, 3000) + '\n...(输出过长已截断)';
+        }
+        await replyText(messageId, reply);
+      } catch (replyError) {
+        console.error('[飞书机器人] 回复 Claude 结果失败:', replyError.message);
       }
-    }
+    });
   }
 }
 
