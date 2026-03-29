@@ -8,6 +8,8 @@
     "mcp": "node mcp-server/index.js",
     "bot": "node mcp-server/feishu-bot.js",
     "codex-bot": "node mcp-server/codex-bot.js",
+    "kimi-bot": "node mcp-server/kimi-bot.js",
+    "minimax-bot": "node mcp-server/minimax-bot.js",
     "web": "node web-dashboard/server.js",
     "start": "npm run bot & npm run codex-bot & npm run web"
   },
