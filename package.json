@@ -13,7 +13,12 @@
     "unified-bot": "node mcp-server/unified-bot.js",
     "web": "node web-dashboard/server.js",
     "start": "npm run bot & npm run codex-bot & npm run web",
-    "start:unified": "npm run unified-bot & npm run web"
+    "start:unified": "npm run unified-bot & npm run web",
+    "agent:claude": "node mcp-server/agents/claude-agent.js",
+    "agent:kimi": "node mcp-server/agents/kimi-agent.js",
+    "agent:minimax": "node mcp-server/agents/minimax-agent.js",
+    "agent:codex": "node mcp-server/agents/codex-agent.js",
+    "start:agents": "npm run agent:claude & npm run agent:kimi & npm run agent:minimax & npm run agent:codex & npm run web"
   },
   "author": "Claude Task Hub",
   "license": "MIT"
