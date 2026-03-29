@@ -10,8 +10,10 @@
     "codex-bot": "node mcp-server/codex-bot.js",
     "kimi-bot": "node mcp-server/kimi-bot.js",
     "minimax-bot": "node mcp-server/minimax-bot.js",
+    "unified-bot": "node mcp-server/unified-bot.js",
     "web": "node web-dashboard/server.js",
-    "start": "npm run bot & npm run codex-bot & npm run web"
+    "start": "npm run bot & npm run codex-bot & npm run web",
+    "start:unified": "npm run unified-bot & npm run web"
   },
   "author": "Claude Task Hub",
   "license": "MIT"
