@@ -10,7 +10,8 @@
  *   /done task_id - 完成任务
  *   /status       - 查看统计
  *   /detail id    - 查看任务详情
- *   其他文本       - 直接创建任务
+ *   /exec 任务    - 携带文件工具执行（读写文件、运行命令），消息触发即运行
+ *   普通文本       - 无工具快速问答（消息触发即运行，不轮询）
  */
 
 import * as lark from '@larksuiteoapi/node-sdk';
@@ -290,6 +291,54 @@ function formatTime(isoTime) {
 }
 
 /**
+ * 调用 Claude 处理消息（主动触发，非轮询）
+ *
+ * 消息到来时才 spawn Claude 进程，处理完立即退出，闲时零消耗。
+ *
+ * @param {string} messageId - 飞书消息 ID
+ * @param {string} text      - 用户消息内容
+ * @param {boolean} withTools - true = 携带文件工具（/exec 模式），false = 纯问答
+ */
+async function handleClaudeExec(messageId, text, withTools) {
+  const claudePath = process.platform === 'win32'
+    ? 'C:/Users/Administrator/AppData/Roaming/npm/claude.cmd'
+    : 'claude';
+
+  const modeLabel = withTools ? 'Claude (工具模式)' : 'Claude';
+  await replyText(messageId, `[${modeLabel}] 已收到，正在处理...`);
+  console.log(`[飞书机器人] 触发 Claude (withTools=${withTools}): ${text.substring(0, 100)}`);
+
+  // withTools=true 时开放文件读写和命令执行工具
+  const args = withTools
+    ? ['-p', text, '--allowedTools', 'Read,Write,Edit,Bash,Glob,Grep', '--dangerously-skip-permissions']
+    : ['-p', text];
+
+  const timeout = withTools ? 300000 : 120000; // 工具模式允许 5 分钟
+
+  execFile(claudePath, args, {
+    timeout,
+    maxBuffer: 2 * 1024 * 1024,
+    shell: process.platform === 'win32',
+    cwd: path.join(__dirname, '..')
+  }, async (error, stdout) => {
+    try {
+      let reply;
+      if (error) {
+        reply = error.killed
+          ? `[${modeLabel}] 处理超时（${timeout / 60000} 分钟限制）`
+          : `[${modeLabel}] 处理失败: ${error.message.substring(0, 200)}`;
+      } else {
+        reply = (stdout || '').trim() || '(无输出)';
+      }
+      if (reply.length > 3000) reply = reply.substring(0, 3000) + '\n...(输出过长已截断)';
+      await replyText(messageId, reply);
+    } catch (replyError) {
+      console.error('[飞书机器人] 回复失败:', replyError.message);
+    }
+  });
+}
+
+/**
  * 解析并处理用户消息
  *
  * @param {object} data - 飞书消息事件数据
@@ -338,42 +387,13 @@ async function handleMessage(data) {
     // 查看任务详情
     const taskId = text.slice(8).trim();
     await handleDetail(messageId, taskId);
+  } else if (text.startsWith('/exec ')) {
+    // /exec 前缀 → 携带文件工具的 Claude（读写文件、执行命令）
+    const task = text.slice(6).trim();
+    await handleClaudeExec(messageId, task, true);
   } else {
-    // 非指令文本 → 调用 claude -p 直接处理
-    await replyText(messageId, '已收到，Claude 正在处理...');
-    console.log(`[飞书机器人] 调用 claude -p: ${text.substring(0, 100)}`);
-
-    const claudePath = process.platform === 'win32'
-      ? 'C:/Users/Administrator/AppData/Roaming/npm/claude.cmd'
-      : 'claude';
-
-    execFile(claudePath, ['-p', text], {
-      timeout: 120000,
-      maxBuffer: 1024 * 1024,
-      shell: process.platform === 'win32',
-      cwd: path.join(__dirname, '..')
-    }, async (error, stdout, stderr) => {
-      try {
-        let reply;
-        if (error) {
-          if (error.killed) {
-            reply = '[Claude] 处理超时（2分钟限制）';
-          } else {
-            reply = `[Claude] 处理失败: ${error.message.substring(0, 200)}`;
-          }
-        } else {
-          reply = (stdout || '').trim();
-          if (!reply) reply = '(Claude 无输出)';
-        }
-        // 截断过长回复
-        if (reply.length > 3000) {
-          reply = reply.substring(0, 3000) + '\n...(输出过长已截断)';
-        }
-        await replyText(messageId, reply);
-      } catch (replyError) {
-        console.error('[飞书机器人] 回复 Claude 结果失败:', replyError.message);
-      }
-    });
+    // 普通文本 → 无工具 claude -p（快速问答，不消耗额外资源）
+    await handleClaudeExec(messageId, text, false);
   }
 }
 
